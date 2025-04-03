@@ -1,0 +1,190 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Naya Amani Vitals and Signal Health Metrics</title>
+    <link rel="stylesheet" href="styles.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+</head>
+<body>
+    <div class="dashboard">
+        <h2>Naya Amani Vitals and Signal Health Metrics</h2>
+
+        <!-- Date range filter -->
+        <div class="date-filter">
+            <label for="startDate">Start Date:</label>
+            <input type="text" id="startDate" class="datepicker" placeholder="Select start date">
+            <label for="endDate">End Date:</label>
+            <input type="text" id="endDate" class="datepicker" placeholder="Select end date">
+        </div>
+
+        <div class="grid">
+            <div class="card">
+                <h3>Blood Glucose Levels</h3>
+                <canvas id="glucoseChart"></canvas>
+            </div>
+            <div class="card">
+                <h3>Heart Rate</h3>
+                <canvas id="heartRateChart"></canvas>
+            </div>
+        </div>
+
+        <div class="grid vitals">
+            <div class="card"><h3>Blood Pressure</h3><p id="bp">--</p></div>
+            <div class="card"><h3>Fetal Heart Rate</h3><p id="fhr">--</p></div>
+            <div class="card"><h3>Oxygen Saturation</h3><p id="osat">--</p></div>
+            <div class="card"><h3>Weight</h3><p id="weight">--</p></div>
+            <div class="card"><h3>Sleep Duration</h3><p id="sleep">--</p></div>
+            <div class="card"><h3>Activity Level</h3><p id="steps">--</p></div>
+            <div class="card"><h3>Contractions</h3><p id="contractions">--</p></div>
+            <div class="card"><h3>Ketone Levels</h3><p id="ketones">--</p></div>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener("DOMContentLoaded", function () {
+            // Initialize the date pickers with flatpickr
+            const startDatePicker = flatpickr("#startDate", {
+                defaultDate: "2025-01-01",
+                maxDate: "2025-02-12",
+                dateFormat: "Y-m-d",
+                onChange: updateData
+            });
+
+            const endDatePicker = flatpickr("#endDate", {
+                defaultDate: "2025-02-12",
+                maxDate: "2025-02-12",
+                dateFormat: "Y-m-d",
+                onChange: updateData
+            });
+
+            let dates = [];
+            let glucoseLevels = [];
+            let heartRates = [];
+            let currentIndex = -1; // to highlight today's date
+
+            const glucoseCtx = document.getElementById("glucoseChart").getContext("2d");
+            const heartRateCtx = document.getElementById("heartRateChart").getContext("2d");
+
+            function createChart(ctx, label, color, data, labels) {
+                return new Chart(ctx, {
+                    type: "line",
+                    data: {
+                        labels: labels,
+                        datasets: [{
+                            label: label,
+                            data: data,
+                            borderColor: color,
+                            borderWidth: 2,
+                            fill: false,
+                            tension: 0.4,  // Smooth curve
+                        }]
+                    },
+                    options: {
+                        animation: {
+                            duration: 1000,  // Smooth animation duration
+                            easing: 'easeInOutCubic'  // Smoother transition
+                        },
+                        responsive: true,
+                        scales: {
+                            x: {
+                                ticks: { color: "#000" },
+                                grid: { color: "#ddd" }
+                            },
+                            y: { ticks: { color: "#000" } }
+                        }
+                    }
+                });
+            }
+
+            const glucoseChart = createChart(glucoseCtx, "Glucose", "#E63946", glucoseLevels, dates);
+            const heartRateChart = createChart(heartRateCtx, "Heart Rate", "#1D3557", heartRates, dates);
+
+            // Function to highlight today's data point
+            function highlightDay(dayIndex) {
+                glucoseChart.data.datasets[0].borderColor = dayIndex === currentIndex ? "#FF6347" : "#E63946";
+                glucoseChart.update();
+                heartRateChart.data.datasets[0].borderColor = dayIndex === currentIndex ? "#FF6347" : "#1D3557";
+                heartRateChart.update();
+            }
+
+            // Function to update vitals and charts every 5 seconds
+            function updateVitals() {
+                if (dates.length === 0) return;  // If no data, do nothing
+
+                // Generate random data for vitals and charts for the selected date range
+                const newGlucose = Math.floor(Math.random() * 40) + 90;
+                const newHeartRate = Math.floor(Math.random() * 15) + 70;
+
+                glucoseLevels.push(newGlucose);
+                heartRates.push(newHeartRate);
+
+                if (glucoseLevels.length > 5) glucoseLevels.shift();
+                if (heartRates.length > 5) heartRates.shift();
+                if (dates.length > 5) dates.shift();
+
+                glucoseChart.data.labels = dates;
+                glucoseChart.data.datasets[0].data = glucoseLevels;
+                glucoseChart.update();
+
+                heartRateChart.data.labels = dates;
+                heartRateChart.data.datasets[0].data = heartRates;
+                heartRateChart.update();
+
+                // Update vitals data on the page
+                document.getElementById("bp").textContent = `${Math.floor(Math.random() * 20) + 110}/${Math.floor(Math.random() * 10) + 70} mmHg`;
+                document.getElementById("fhr").textContent = `${Math.floor(Math.random() * 10) + 140} bpm`;
+                document.getElementById("osat").textContent = `${Math.floor(Math.random() * 3) + 95}%`;
+                document.getElementById("weight").textContent = `${Math.floor(Math.random() * 5) + 170} lb`;
+                document.getElementById("sleep").textContent = `${Math.floor(Math.random() * 3) + 6}h ${Math.floor(Math.random() * 40) + 20}m`;
+                document.getElementById("steps").textContent = `${Math.floor(Math.random() * 2000) + 4000} steps`;
+                document.getElementById("contractions").textContent = Math.random() > 0.5 ? "Mild" : "Moderate";
+                document.getElementById("ketones").textContent = (Math.random() * 1.5).toFixed(1) + " mmol/L";
+
+                // Highlight today's data point (for simulation, let's highlight the third day)
+                highlightDay(currentIndex);
+            }
+
+            // Function to handle date range change
+            function updateData(selectedDates, dateStr, instance) {
+                const startDate = new Date(document.getElementById("startDate").value);
+                const endDate = new Date(document.getElementById("endDate").value);
+
+                if (startDate > endDate) {
+                    alert("Start date must be before end date.");
+                    return;
+                }
+
+                // Generate dates between start and end
+                dates = [];
+                for (let d = new Date(startDate); d <= endDate; d.setDate(d.getDate() + 1)) {
+                    dates.push(new Date(d).toISOString().split("T")[0]);
+                }
+
+                if (dates.length === 0) {
+                    // No dates selected, show "--"
+                    document.getElementById("bp").textContent = "--";
+                    document.getElementById("fhr").textContent = "--";
+                    document.getElementById("osat").textContent = "--";
+                    document.getElementById("weight").textContent = "--";
+                    document.getElementById("sleep").textContent = "--";
+                    document.getElementById("steps").textContent = "--";
+                    document.getElementById("contractions").textContent = "--";
+                    document.getElementById("ketones").textContent = "--";
+                } else {
+                    // Reset data arrays
+                    glucoseLevels = [];
+                    heartRates = [];
+                    currentIndex = Math.floor(dates.length / 2); // Highlight today's date (middle day)
+                    updateVitals();
+                }
+            }
+
+            setInterval(updateVitals, 5000); // Update every 5 seconds
+        });
+    </script>
+</body>
+</html>
